@@ -1,70 +1,41 @@
 # macOS Printer Auto-Configuration Script
 
-This repository contains a Bash script designed to automate the configuration of network printers on macOS devices. It uses the manufacturer-provided PPD files to ensure full printer functionality and can be deployed as a post-install script using tools like NinjaRMM.
+This repository contains a Bash script designed to automate the configuration of network printers on macOS devices *after* the necessary drivers have been installed. It uses the manufacturer-provided PPD files to ensure full printer functionality.
+
+**Prerequisites:**
+
+* **Printer Drivers Installed:** The correct macOS printer driver package for your specific printer model **must** be installed on the target Mac *before* running this script. Driver installation typically places the required PPD file in `/Library/Printers/PPDs/Contents/Resources/`.
+* **Printer Network Information:** You need the printer's IP address.
 
 ## Table of Contents
 
-1.  [I. Installing the Printer Driver via NinjaRMM](#i-installing-the-printer-driver-via-ninjarmm)
-2.  [II. Adding the Printer Configuration Script to NinjaRMM](#ii-adding-the-printer-configuration-script-to-ninjarmm)
-3.  [III. Script Configuration Guide](#iii-script-configuration-guide)
+1.  [I. Using the Printer Configuration Script](#i-using-the-printer-configuration-script)
+2.  [II. Script Configuration Guide](#ii-script-configuration-guide)
     * [A. Variables to Modify](#a-variables-to-modify)
     * [B. Network Considerations (Ping Check)](#b-network-considerations-ping-check)
     * [C. Script Template](#c-script-template)
-4.  [IV. Script Saving and Testing](#iv-script-saving-and-testing)
-    * [A. Save the Script and Add to NinjaRMM](#a-save-the-script-and-add-to-ninjarmm)
-    * [B. Test the Driver Install and Script](#b-test-the-driver-install-and-script)
+3.  [III. Script Testing](#iii-script-testing)
+    * [A. Prepare the Script](#a-prepare-the-script)
+    * [B. Test the Script](#b-test-the-script)
 
 ---
 
-## I. Installing the Printer Driver via NinjaRMM
+## I. Using the Printer Configuration Script
 
-This section guides you through adding a new printer driver installation application within NinjaRMM, which will deploy the driver files needed by the configuration script.
+This script is designed to be run on a macOS machine where the printer drivers are already present.
 
-### A. Add New Installation Application
-
-1.  **Name:** Enter a descriptive name for the application (e.g., "Canon iR-ADV C5840i Driver").
-2.  **Description (Optional):** Add a brief description of the driver.
-3.  **Operating System:** Select "macOS".
-4.  **Architecture:** Select "64-bit" (this is almost always the correct choice for modern Macs).
-5.  **Installer:** This is the _critical_ part.
-    * **Download:** Download the appropriate driver package (`.pkg`, `.dmg`, or `.zip`) from the printer manufacturer's website (e.g., Canon, Kyocera, HP). Make sure it's for the *exact* printer model and macOS.
-    * **Upload:** Add the downloaded `.pkg` file to NinjaRMM.
-    * **IMPORTANT: NO SPACES IN FILENAME:** Ensure the filename of the `.pkg` file *does not contain any spaces*. If it does, rename it, replacing spaces with underscores (`_`) *before* uploading it to Ninja. Spaces will break the installation process.
-6.  **Run As:** Select "System".
-
-### B. Additional Settings (Optional)
-
-1.  **Helper Files:**
-    * If you downloaded a `.dmg` file, and it contained files *other* than the `.pkg` installer, add those files/folders here. This is less common; most macOS printer drivers are self-contained `.pkg` files.
-2.  **Installer Icon:** You can optionally choose a custom icon (e.g., the printer brand's logo). The image must be 32x32 pixels. You might need to use an image downscaler to achieve this size.
-3.  **Pre-Install Script:** Add any script you'd want to run *prior* to the driver installation.
-4.  **Post Install Script:** **This is where you will add the configuration script from Section III.C.**
-
-### C. Submit
-
-1.  NinjaRMM might prompt for a Two-Factor Authentication (2FA) code. Enter the code if required.
-2.  Click "Add" to save the new application.
+1.  **Configure:** Modify the script template in Section II.C below with your specific printer's details.
+2.  **Save:** Save the modified script to a file (e.g., `configure_printer.sh`).
+3.  **Make Executable (Optional but recommended):** Open Terminal and run `chmod +x configure_printer.sh`.
+4.  **Run:** Execute the script with administrator privileges using `sudo` in the Terminal:
+    ```bash
+    sudo ./configure_printer.sh
+    ```
+5.  **Deployment (Optional):** This script can also be incorporated into deployment tools (like Jamf Pro, Munki, etc.) as a post-install script or policy payload, ensuring it runs *after* the driver installation is confirmed.
 
 ---
 
-## II. Adding the Printer Configuration Script to NinjaRMM
-
-This section covers adding the configuration script itself within NinjaRMM, typically as a post-install action for the driver application created above.
-
-### A. Script Details (in NinjaRMM)
-
-1.  **Script (Code Area):** Paste the entire script (from the template in Section III.C) into the script editor area.
-2.  **Name:** Enter a descriptive name for the script (e.g., "Configure Canon Office Printer").
-3.  **Description:** Add a helpful description.
-4.  **Language:** Select "ShellScript".
-5.  **Operating System:** Select "macOS".
-6.  **Architecture:** Select "64-bit".
-7.  **Run As:** Select "System".
-8.  **Parameters:** Leave this blank (no parameters are needed).
-
----
-
-## III. Script Configuration Guide
+## II. Script Configuration Guide
 
 This section details how to modify the script for your specific printer. You _must_ customize the variables at the beginning of the script.
 
@@ -81,7 +52,7 @@ You'll need to change the following variables at the beginning of the script. Ea
     * **Example:** `printer_ip="192.168.1.75"`
 
 * **`ppd_path_orig`:**
-    * **Description:** The _full path_ to the printer's PPD file (`.ppd.gz` or `.PPD`). After the driver is installed (via Ninja in Section I), the PPD file will usually be in `/Library/Printers/PPDs/Contents/Resources/`. You might need to look in subfolders within `Resources` to find the correct file. The path _can_ contain spaces.
+    * **Description:** The _full path_ to the printer's PPD file (`.ppd.gz` or `.PPD`). Since the driver is assumed to be installed, the PPD file will usually be in `/Library/Printers/PPDs/Contents/Resources/`. You might need to look in subfolders within `Resources` to find the correct file matching your printer model. The path _can_ contain spaces.
     * **Example:** `ppd_path_orig="/Library/Printers/PPDs/Contents/Resources/Canon/MyCanonPrinter.ppd.gz"`
     * **Example:** `ppd_path_orig="/Library/Printers/PPDs/Contents/Resources/Xerox WorkCentre 7855.PPD"`
 
@@ -131,7 +102,7 @@ ppd\_filename\_gz\="</span>{ppd_filename%.PPD}.ppd.gz"
     ppd_path="$ppd_dir/$ppd_filename_gz"
     if [ ! -f "$ppd_path" ]; then
         echo "Error: Neither $ppd_filename nor $ppd_filename_gz found in $ppd_dir."
-        echo "Make sure the correct PPD file is installed."
+        echo "Make sure the correct PPD file is installed and accessible."
         exit 1
     fi
 fi
