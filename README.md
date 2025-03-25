@@ -56,6 +56,14 @@ You'll need to change the following variables at the beginning of the script. Ea
     * **Example:** `ppd_path_orig="/Library/Printers/PPDs/Contents/Resources/Canon/MyCanonPrinter.ppd.gz"`
     * **Example:** `ppd_path_orig="/Library/Printers/PPDs/Contents/Resources/Xerox WorkCentre 7855.PPD"`
 
+* **Handling Spaces in PPD Paths:**
+    * **Problem:** While less common now, spaces within file paths or names can sometimes cause problems in shell scripts if not handled carefully.
+    * **Solution in this Script:** This script is designed to handle spaces in the `ppd_path_orig` correctly.
+        * It does **not** attempt to rename the PPD file on the disk.
+        * The variable `$ppd_path` (which holds the final path used) is consistently enclosed in double quotes (`"`) whenever it's used in commands (e.g., `if [ ! -f "$ppd_path" ]`, `lpadmin -P "$ppd_path"`).
+        * Enclosing variables containing paths in double quotes is the standard and correct way in Bash to ensure the shell treats the entire string, including spaces, as a single argument.
+        * Additionally, the script prioritizes using the compressed `.ppd.gz` version if it exists, which often follows more consistent naming conventions.
+
 ### B. Network Considerations (Ping Check)
 
 The script includes a `ping` command to check if the printer is reachable on the network. This is useful for printers on the _same_ network as the Mac.
